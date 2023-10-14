@@ -12,3 +12,6 @@ const ProblemPage = () => {
 }
 
 export default ProblemPage;
+
+// fetch the loacl data from the API
+// SSG -> Static site Generation
