@@ -80,7 +80,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
                             href='/'
                             target='_blank'
                             rel='noreferrer'
-                            className="bg-brand-orange py-1.5 px-3 cursor-pointer rounded text-black hover:bg-white"
+                            className="bg-gray-800 py-1.5 px-3 cursor-pointer rounded text-white hover:bg-gray-900"
                         >
                             Premium
                         </a>

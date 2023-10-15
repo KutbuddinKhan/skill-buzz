@@ -46,9 +46,9 @@ const Login = () => {
 
     return (
         <form className="space-y-6 px-6 py-4" onSubmit={handleLogin}>
-            <h3 className="text-xl font-medium text-white">Sign in to Skill Buzz</h3>
+            <h3 className="text-xl font-medium text-gray-900">Sign in to Skill Buzz</h3>
             <div>
-                <label htmlFor="email" className="text-sm font-medium block mb-2 text-gray-300">
+                <label htmlFor="email" className="text-sm font-medium block mb-2 text-white">
                     Your Email
                 </label>
                 <input
@@ -56,7 +56,7 @@ const Login = () => {
                     type="email" name='email' id='email' className="border-2 outline-none sm:text-sm rounded-lg focus:right-blue focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 text-white" placeholder='youremail@gmail.com' />
             </div>
             <div>
-                <label htmlFor="password" className="text-sm font-medium block mb-2 text-gray-300">
+                <label htmlFor="password" className="text-sm font-medium block mb-2 text-white">
                     Your Password
                 </label>
                 <input
@@ -64,17 +64,17 @@ const Login = () => {
                     type="password" name='password' id='password' className="border-2 outline-none sm:text-sm rounded-lg focus:right-blue focus:border-blue-500 block w-full p-2.5 bg-gray-600 border-gray-500 text-white" placeholder='**********' />
             </div>
 
-            <button type='submit' className="w-full text-white focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center bg-brand-orange hover:bg-brand-orange-s">
+            <button type='submit' className="w-full text-white focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center bg-gray-800 hover:bg-gray-900">
                 {loading ? "Loading..." : "Log in"}
             </button>
             <button className="flex w-full justify-end" onClick={() => handleClick("forgotPassowrd")}>
-                <a href='#' className="text-sm block text-brand-orange border:underline w-full text-right" >
+                <a href='#' className="text-sm block text-white border:underline w-full text-right" >
                     Forgot Password
                 </a>
             </button>
             <div className="text-sm font-medium text-gray-300" >
                 Not Registered? {" "}
-                <a href='#' className="text-blue-700 border:underline" onClick={() => handleClick("register")}>
+                <a href='#' className="text-blue-600 border:underline" onClick={() => handleClick("register")}>
                     Create Account Now!
                 </a>
             </div>

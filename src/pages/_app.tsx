@@ -11,7 +11,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
 				<title>Skill Buzz</title>
 				<meta name='viewport' content='width=device-width, initial-scale=1' />
-				<link rel='icon' href='/skillbuzz-logo.png' />
+				<link rel='icon' href='/skillbuzz-logo.png'/>
 				<meta
 					name='description'
 					content='Web application that contains leetcode problems and video solutions'

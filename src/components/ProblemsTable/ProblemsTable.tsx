@@ -1,16 +1,24 @@
+import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
-import { problems } from '@/mockProblems/problems';
 import { BsCheckCircle } from "react-icons/bs";
 import { AiFillYoutube } from "react-icons/ai";
-import Link from 'next/link';
 import { IoClose } from 'react-icons/io5';
 import YouTube from 'react-youtube';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { firestore } from '@/firebase/firebase';
+import { DBProblem } from '@/utils/types/problem';
 
-const ProblemsTable = () => {
+type ProblemsTableProps = {
+    setLoadingProblems: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const ProblemsTable: React.FC<ProblemsTableProps> = ({ setLoadingProblems }) => {
     const [youtubePlayer, setYoutubePlayer] = useState({
         isOpen: false,
         videoId: ""
     })
+
+    const problems = useGateProblems(setLoadingProblems);
 
     const closeModal = () => {
         setYoutubePlayer({ isOpen: false, videoId: "" })
@@ -25,60 +33,100 @@ const ProblemsTable = () => {
     }, [])
     return (
         <>
-            <tbody className="text-black">
-                {problems.map((doc, idx) => {
-                    const difficulyColor = doc.difficulty === "Easy" ? "text-dark-green-s" : doc.difficulty === "Medium" ? "text-dark-yellow" : "text-dark-ping";
+            <tbody className="text-white text-[1rem]">
+                {problems.map((problem, idx) => {
+                    const difficulyColor = problem.difficulty === "Easy" ? "text-dark-green-s" : problem.difficulty === "Medium" ? "text-dark-yellow" : "text-dark-ping";
 
 
                     return (
-                        <tr className={`${idx % 2 == 1 ? "bg-gray-400" : ""}`} key={doc.id}>
+                        <tr className={`${idx % 2 == 1 ? "bg-gray-600" : ""}`} key={problem.id}>
                             <th className="px-2 py-4 font-medium whitespace-nowrap text-dark-green-s">
-                                <BsCheckCircle fontsize={"24"} width="24" />
+                                <BsCheckCircle fontSize={"24"} width="24" />
                             </th>
                             <td className="px-6 py-4">
-                                <Link className="hover:text-blue-600 cursor-pointer" href={`/problems/${doc.id}`}>
-                                    {doc.title}
-                                </Link>
+                                {problem.link ? (
+                                    <Link
+                                        href={problem.link}
+                                        className='hover:text-blue-600 cursor-pointer'
+                                        target='_blank'
+                                    >
+                                        {problem.title}
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        className='hover:text-blue-600 cursor-pointer'
+                                        href={`/problems/${problem.id}`}
+                                    >
+                                        {problem.title}
+                                    </Link>
+                                )}
                             </td>
                             <td className={`px-6 py-4 ${difficulyColor}`}>
-                                {doc.difficulty}
+                                {problem.difficulty}
                             </td>
                             <td className={'px-6 py-4'}>
-                                {doc.category}
+                                {problem.category}
                             </td>
                             <td className={'px-6 py-4'}>
-                                {doc.videoId ? (
+                                {problem.videoId ? (
                                     <AiFillYoutube
                                         fontSize={"36"}
                                         width="36"
                                         height="36"
                                         className="cursor-pointer hover:text-red-500"
-                                        onClick= {() => setYoutubePlayer ({ isOpen: true, videoId: doc.videoId as string })}
+                                        onClick={() => setYoutubePlayer({ isOpen: true, videoId: problem.videoId as string })}
                                     />
                                 ) : (
-                                    <p className="text-gray-800"> Coming soon</p>
+                                    <p className="text-white"> Coming soon</p>
                                 )}
                             </td>
                         </tr>
                     )
                 })}
-            </tbody>
+            </tbody >
 
-            {youtubePlayer.isOpen && (
-                <tfoot className='fixed top-0 left-0 h-screen w-screen flex items-center justify-center ' >
-                    <div className='bg-black z-10 opacity-70 top-0 left-0 w-screen h-screen absolute' onClick={closeModal}></div>
-                    <div className='w-full z-50 h-full px-6 relative max-w-4xl'>
-                        <div className='w-full h-full flex items-center justify-center relative'>
-                            <div className='w-full relative'>
-                                <IoClose fontSize={"35"} className='cursor-pointer absolute -top-16 right-0' onClick={closeModal} />
-                                <YouTube videoId={youtubePlayer.videoId} loading='lazy' iframeClassName='w-full min-h-[500px]' />
+            {
+                youtubePlayer.isOpen && (
+                    <tfoot className='fixed top-0 left-0 h-screen w-screen flex items-center justify-center ' >
+                        <div className='bg-black z-10 opacity-70 top-0 left-0 w-screen h-screen absolute' onClick={closeModal}></div>
+                        <div className='w-full z-50 h-full px-6 relative max-w-4xl'>
+                            <div className='w-full h-full flex items-center justify-center relative'>
+                                <div className='w-full relative'>
+                                    <IoClose fontSize={"35"} className='cursor-pointer absolute -top-16 right-0' onClick={closeModal} />
+                                    <YouTube videoId={youtubePlayer.videoId} loading='lazy' iframeClassName='w-full min-h-[500px]' />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </tfoot>
-            )}
+                    </tfoot>
+                )
+            }
         </>
     )
 }
 
 export default ProblemsTable
+
+
+function useGateProblems(setLoadingProblems: React.Dispatch<React.SetStateAction<boolean>>) {
+    const [problems, setProblems] = useState<DBProblem[]>([]);
+
+    useEffect(() => {
+        const getProblems = async () => {
+            // fetching data logic
+            setLoadingProblems(true);
+
+            // Get multiple documents from a collection
+            const q = query(collection(firestore, "problems"), orderBy("order", "asc"));
+
+            const querySnapshot = await getDocs(q);
+            const tmp: DBProblem[] = [];
+            querySnapshot.forEach((doc) => {
+                tmp.push({ id: doc.id, ...doc.data() } as DBProblem)
+            });
+            setProblems(tmp);
+            setLoadingProblems(false);
+        }
+        getProblems()
+    }, [setLoadingProblems])
+    return problems;
+}
