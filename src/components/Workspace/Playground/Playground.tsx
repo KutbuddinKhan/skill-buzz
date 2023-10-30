@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import PreferenceNav from './PreferenceNav/PreferenceNav';
 import Split from 'react-split';
 import CodeMirror from "@uiw/react-codemirror"
@@ -7,26 +7,131 @@ import { javascript } from '@codemirror/lang-javascript';
 import { python } from '@codemirror/lang-python';
 import EditorFooter from './EditorFooter';
 import { Problem } from '@/utils/types/problem';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import { auth, firestore } from '@/firebase/firebase';
+import { toast } from 'react-toastify';
+import { problems } from '@/utils/problems';
+import { useRouter } from 'next/router';
+import { arrayUnion, doc, updateDoc } from 'firebase/firestore';
+import { json } from 'stream/consumers';
+import useLocalStorage from '@/hooks/useLocalStorage';
 
 type PlaygroundProps = {
-    problem: Problem
+    problem: Problem;
+    setSuccess: React.Dispatch<React.SetStateAction<boolean>>;
+    setSolved: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
-    const [activeTestCaseId, setActiveTestCaseId] = useState<number>(0)
+export interface ISettings {
+    fontSize: string;
+    settingsModalIsOpen: boolean;
+    dropdownIsOpen: boolean;
+}
+
+const Playground: React.FC<PlaygroundProps> = ({ problem, setSuccess, setSolved }) => {
+    const [activeTestCaseId, setActiveTestCaseId] = useState<number>(0);
+    let [userCode, setUserCode] = useState<string>(problem.starterCode);
+    const [fontSize, setFontSize] = useLocalStorage("skillBuzz-fontSize", "16px");
+
+    const [settings, setSettings] = useState<ISettings>({
+        fontSize: fontSize,
+        settingsModalIsOpen: true,
+        dropdownIsOpen: false,
+    })
+
+    
+
+    const [user] = useAuthState(auth);
+    const {
+        query: { pid },
+    } = useRouter()
+
+    const handleSubmit = async () => {
+        // alert("Submited")
+        if (!user) {
+            toast.error("Please login to submit your code", {
+                position: "top-center",
+                autoClose: 3000,
+                theme: 'dark'
+            })
+            return
+        }
+        try {
+            userCode = userCode.slice(userCode.indexOf(problem.starterFunctionName)); // read the code from the function Name
+            const cb = new Function(`return ${userCode}`)(); // call- back
+            const handler = problems[pid as string].handlerFunction;
+            if (typeof handler === "function") {
+                const success = handler(cb);
+                if (success) {
+                    toast.success("Congrats! All tests passed!", {
+                        position: "top-center",
+                        autoClose: 3000,
+                        theme: 'dark'
+                    })
+                    setSuccess(true);
+                    setTimeout(() => {
+                        setSuccess(false);
+                    }, 4000);
+
+                    // add solved problem in database
+                    const userRef = doc(firestore, "users", user.uid);
+                    await updateDoc(userRef, {
+                        solvedProblems: arrayUnion(pid),
+                    })
+                    setSolved(true);
+                }
+            }
+        } catch (error: any) {
+            console.log(error.message);
+            if (error.message.startsWith("AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:")) {
+                toast.error("Opss! One or more test cases failed", {
+                    position: "top-center",
+                    autoClose: 3000,
+                    theme: 'dark'
+                })
+            } else {
+                toast.error(error.message, {
+                    position: "top-center",
+                    autoClose: 3000,
+                    theme: 'dark'
+                })
+            }
+
+        }
+    }
+
+    // Loacal Storage 
+    useEffect(() => {
+        const code = localStorage.getItem(`code-${pid}`);
+        if (user) {
+            setUserCode(code ? JSON.parse(code) : problem.starterCode);
+        } else {
+            setUserCode(problem.starterCode)
+        }
+    }, [pid, user, problem.starterCode])
+
+    const onChange = (value: string) => {
+        // console.log(value);
+        setUserCode(value);
+
+        // Loacal Storage 
+        localStorage.setItem(`code-${pid}`, JSON.stringify(value));
+    }
+
     return (
         <div className="flex flex-col bg-dark-layer-1 relative overflow-x-hidden">
-            <PreferenceNav />
+            <PreferenceNav settings={settings} setSettings={setSettings} />
 
             <Split className='h-[calc(100vh-94px)]' direction='vertical' sizes={[60, 40]} minSize={60}>
                 <div className='w-full overflow-auto'>
                     <CodeMirror
-                        value={problem.starterCode} // boiler plate
+                        // value={problem.starterCode} // boiler plate
+                        value={userCode}  // local storage
                         theme={vscodeDark}
-                        // onChange={onChange}
+                        onChange={onChange}
                         extensions={[javascript()]}
                         // extensions={[javascript(), python()]}
-                        style={{ fontSize: 16 }}
+                        style={{ fontSize: settings.fontSize }}
                     />
                 </div>
                 <div className="w-full px-5 overflow-auto">
@@ -73,7 +178,7 @@ const Playground: React.FC<PlaygroundProps> = ({ problem }) => {
             </Split>
 
             {/* editor footer */}
-            <EditorFooter />
+            <EditorFooter handleSubmit={handleSubmit} />
 
         </div>
     )
