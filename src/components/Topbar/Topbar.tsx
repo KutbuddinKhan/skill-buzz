@@ -86,7 +86,7 @@ const Topbar: React.FC<TopbarProps> = ({ problemPage }) => {
                             rel='noreferrer'
                             className="bg-gray-800 py-1.5 px-3 cursor-pointer rounded text-white hover:bg-gray-900"
                         >
-                            Premium
+                            Coming Soon
                         </a>
 
                     </div>
